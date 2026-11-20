@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Spese del mese</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Spese">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2f6b4f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--bg:#f3f5f1;--surface:#fff;--ink:#1c2420;--muted:#66726b;--line:#dde3dc;--accent:#2f6b4f;--accent-ink:#fff;--warn:#b4472f;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a17;--surface:#1d2521;--ink:#e8eee9;--muted:#93a199;--line:#2c3732;--accent:#6cc39a;--accent-ink:#0f1a14;--warn:#ec8a6f}}
+:root[data-theme="dark"]{--bg:#141a17;--surface:#1d2521;--ink:#e8eee9;--muted:#93a199;--line:#2c3732;--accent:#6cc39a;--accent-ink:#0f1a14;--warn:#ec8a6f}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+main{max-width:560px;margin:0 auto;padding:16px 16px 90px}
+button,input,select,textarea{font:inherit;color:inherit}
+.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.nav h1{font:700 1.25rem Georgia,serif;margin:0;text-transform:capitalize}
+.ic{background:var(--surface);border:1px solid var(--line);border-radius:10px;width:40px;height:40px;cursor:pointer}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.total{font:700 2.4rem Georgia,serif;margin:0}
+.sm{font-size:1.5rem}
+.muted{color:var(--muted);font-size:.9rem}
+.bar{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin:10px 0 6px}
+.bar>i{display:block;height:100%;background:var(--accent)}
+.over>i{background:var(--warn)}
+.row{display:flex;gap:8px;align-items:center}
+.row.sp{justify-content:space-between}
+input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.full{grid-column:1/-1}
+.btn{width:100%;padding:12px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-weight:700;cursor:pointer}
+.lnk{background:none;border:0;color:var(--accent);cursor:pointer;padding:4px 0;margin-bottom:8px;font-weight:700}
+h2{font-size:1rem;margin:0 0 10px}
+.cat{margin-bottom:10px}
+.item{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.x{background:none;border:0;color:var(--muted);cursor:pointer;font-size:1.2rem}
+.amt{font-weight:700;white-space:nowrap}
+.budget{width:110px;text-align:right}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:left;cursor:pointer}
+.tile b{display:block;text-transform:capitalize}
+.tile.cur{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.tile.fut{opacity:.55}
+.tile .bar{height:6px;margin:6px 0 0}
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+.tabs button{flex:1;background:none;border:0;padding:8px 0 6px;font-size:.75rem;color:var(--muted);cursor:pointer}
+.tabs button span{display:block;font-size:1.2rem;line-height:1.2}
+.tabs button.on{color:var(--accent);font-weight:700}
+</style>
+</head>
+<body>
+<main>
+<section id="v-home" hidden>
+  <div class="card" id="wcard"></div>
+  <div class="card" id="mcard"></div>
+  <div class="card" id="pcard"></div>
+</section>
+
+<section id="v-mesi" hidden>
+  <div id="cal">
+    <div class="nav"><button class="ic" id="yp" aria-label="Anno precedente">‹</button><h1 id="yl"></h1><button class="ic" id="yn" aria-label="Anno successivo">›</button></div>
+    <div class="tiles" id="tiles"></div>
+  </div>
+  <div id="det" hidden>
+    <button class="lnk" id="back">‹ Tutti i mesi</button>
+    <div class="nav"><button class="ic" id="prev" aria-label="Mese precedente">‹</button><h1 id="month"></h1><button class="ic" id="next" aria-label="Mese successivo">›</button></div>
+    <div class="card">
+      <p class="muted" style="margin:0">Totale speso</p>
+      <p class="total" id="total">0,00 €</p>
+      <div class="bar" id="bar"><i style="width:0"></i></div>
+      <div class="row sp">
+        <span class="muted" id="left"></span>
+        <label class="row muted">Budget <input class="budget" id="budget" type="number" inputmode="decimal" min="0" step="10" placeholder="0"></label>
+      </div>
+      <label class="row sp muted" style="margin-top:10px">Entrate del mese <input class="budget" id="income" type="number" inputmode="decimal" min="0" step="50"></label>
+    </div>
+    <div class="card">
+      <h2>Nuova spesa</h2>
+      <div class="grid">
+        <input class="full" id="desc" placeholder="Descrizione (es. Spesa al supermercato)">
+        <input id="amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="Importo €">
+        <input id="date" type="date">
+        <select class="full" id="cat"></select>
+      </div>
+      <button class="btn" id="add">Aggiungi spesa</button>
+    </div>
+    <div class="card"><h2>Per categoria</h2><div id="cats"></div></div>
+    <div class="card"><h2>Movimenti</h2><div id="list"></div></div>
+  </div>
+</section>
+
+<section id="v-sto" hidden>
+  <div class="card"><h2>Panoramica dall’inizio</h2><div id="ssum"></div></div>
+  <div class="card"><h2>Entrate e spese</h2><div id="chm" style="overflow-x:auto"></div></div>
+  <div class="card"><h2>Per categoria</h2><div id="chc"></div><div id="allc"></div></div>
+</section>
+
+<section id="v-imp" hidden>
+  <div class="card">
+    <h2>La tua situazione attuale</h2>
+    <p class="muted" style="margin-top:0">Inserisci quanto hai oggi. Da qui l’app aggiorna il patrimonio con le spese e, mese dopo mese, con entrate e versamenti PAC.</p>
+    <div class="grid">
+      <label class="muted">Liquidità oggi (€)<input id="liq" type="number" inputmode="decimal" step="0.01"></label>
+      <label class="muted">Investito oggi (€)<input id="inv" type="number" inputmode="decimal" step="0.01"></label>
+    </div>
+    <button class="btn" id="sit">Salva situazione di oggi</button>
+    <p class="muted" id="sinfo" style="margin:8px 0 0"></p>
+  </div>
+  <div class="card">
+    <h2>Piano mensile</h2>
+    <div class="grid">
+      <label class="muted">Entrate mensili abituali (€)<input id="inc0" type="number" inputmode="decimal" min="0" step="50"></label>
+      <label class="muted">Versamento PAC (€)<input id="pac" type="number" inputmode="decimal" min="0" step="10"></label>
+      <label class="muted full">Rendimento annuo stimato (%)<input id="rate" type="number" inputmode="decimal" min="0" step="0.5"></label>
+    </div>
+    <p class="muted" style="margin:0">Le entrate di un singolo mese si possono modificare nella scheda del mese.</p>
+  </div>
+  <div class="card">
+    <h2>Backup dei dati</h2>
+    <textarea id="bk" rows="3" placeholder="Incolla qui un backup per ripristinarlo" style="margin-bottom:8px"></textarea>
+    <div class="grid"><button class="btn" id="bk-copy">Copia backup</button><button class="btn" id="bk-load">Ripristina</button></div>
+    <p class="muted" id="bk-msg" style="margin:0">Incolla il backup in Note per conservarlo.</p>
+  </div>
+</section>
+</main>
+<nav class="tabs">
+  <button data-v="home"><span>⌂</span>Home</button>
+  <button data-v="mesi"><span>▦</span>Mesi</button>
+  <button data-v="sto"><span>◔</span>Storico</button>
+  <button data-v="imp"><span>⚙</span>Situazione</button>
+</nav>
+
+<script>
+const CATS=["Supermercati","Alimentari","Casa","Affitto","Svago","Viaggi","Palestra","Telefono","Salute"];
+const KEY="spese-mensili-v1";
+let data={};
+try{const r=localStorage.getItem(KEY);if(r)data=JSON.parse(r)}catch(e){}
+function norm(){if(!Array.isArray(data.expenses))data.expenses=[];data.budgets=data.budgets||{};data.income=data.income||{};data.plan=Object.assign({rate:5},data.plan||{})}
+norm();
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}};
+const $=id=>document.getElementById(id);
+const eur=n=>n.toLocaleString("it-IT",{style:"currency",currency:"EUR"});
+const p2=n=>String(n).padStart(2,"0");
+const mk=d=>d.getFullYear()+"-"+p2(d.getMonth()+1);
+const iso=d=>mk(d)+"-"+p2(d.getDate());
+const nx=k=>{let y=+k.slice(0,4),m=+k.slice(5)+1;if(m>12){m=1;y++}return y+"-"+p2(m)};
+const pv=k=>{let y=+k.slice(0,4),m=+k.slice(5)-1;if(m<1){m=12;y--}return y+"-"+p2(m)};
+const mlab=(k,o)=>new Date(+k.slice(0,4),+k.slice(5)-1,1).toLocaleDateString("it-IT",o);
+const today=new Date(),tk=mk(today);
+let view="home",det=false,ck=tk,yr=today.getFullYear();
+const spent=k=>data.expenses.reduce((s,e)=>e.date.startsWith(k)?s+e.amount:s,0);
+const sk=()=>data.plan.startDate?data.plan.startDate.slice(0,7):"";
+const incomeOf=k=>data.income[k]!=null?data.income[k]:((data.plan.income>0&&k>=sk())?data.plan.income:0);
+function wealth(){
+  const p=data.plan;if(!p.startDate)return null;
+  const pac=p.pac||0;let liq=p.startLiq||0,inv=p.startInv||0;
+  data.expenses.forEach(e=>{if(e.date>=p.startDate&&e.date.slice(0,7)<=tk)liq-=e.amount});
+  for(let k=nx(sk());k<=tk;k=nx(k)){liq+=incomeOf(k)-pac;inv+=pac}
+  return{liq,inv};
+}
+$("cat").innerHTML=CATS.map(c=>`<option>${c}</option>`).join("");
+$("date").value=iso(today);
+
+function go(v){view=v;if(v==="mesi")det=false;render();window.scrollTo(0,0)}
+function openMonth(k){ck=k;det=true;view="mesi";render();window.scrollTo(0,0)}
+
+function renderHome(){
+  const w=wealth(),p=data.plan,pac=p.pac||0;
+  $("wcard").innerHTML=w?'<p class="muted" style="margin:0">Patrimonio totale</p><p class="total">'+eur(w.liq+w.inv)+'</p><div class="grid" style="margin:10px 0 0"><div><p class="muted" style="margin:0">Liquidità</p><b class="sm">'+eur(w.liq)+'</b></div><div><p class="muted" style="margin:0">Investito (PAC)</p><b class="sm">'+eur(w.inv)+'</b></div></div><p class="muted" style="margin:10px 0 0">Calcolato dai saldi del '+new Date(p.startDate+"T00:00").toLocaleDateString("it-IT",{day:"numeric",month:"long",year:"numeric"})+'. Aggiorna i saldi in Situazione quando vuoi.</p>':'<h2>Patrimonio totale</h2><p class="muted" style="margin-top:0">Indica quanto hai oggi tra liquidità e investimenti: da lì l’app aggiorna il patrimonio mese dopo mese.</p><button class="btn" onclick="go(\'imp\')">Imposta la situazione attuale</button>';
+  const t=spent(tk),b=data.budgets[tk]||0;
+  $("mcard").innerHTML='<p class="muted" style="margin:0;text-transform:capitalize">Spese di '+mlab(tk,{month:"long"})+'</p><p class="total">'+eur(t)+'</p><div class="bar'+(b&&t>b?' over':'')+'"><i style="width:'+(b?Math.min(100,t/b*100):0)+'%"></i></div><p class="muted" style="margin:0 0 12px">'+(b?(t>b?'Sforato di '+eur(t-b):'Restano '+eur(b-t)+' su '+eur(b)):'Nessun budget impostato per questo mese')+'</p><button class="btn" onclick="openMonth(tk)">Aggiungi spesa</button>';
+  const inv=w?w.inv:0,r=p.rate/100/12,g=Math.pow(1+r,120),fv=r?inv*g+pac*(g-1)/r:inv+pac*120,put=inv+pac*120;
+  $("pcard").innerHTML='<h2>Proiezione a 10 anni</h2>'+(inv>0||pac>0?'<p style="margin:0 0 4px">Con '+eur(pac)+' al mese e rendimento del '+p.rate+'%: <b>'+eur(fv)+'</b></p><p class="muted" style="margin:0">Partendo da '+eur(inv)+' investiti, versamenti futuri '+eur(pac*120)+', rendimento stimato '+eur(fv-put)+'. Stima ipotetica a rendimento costante: i risultati reali possono variare e il capitale non è garantito.</p>':'<p class="muted" style="margin:0">Imposta investito e versamento PAC in Situazione per vedere la proiezione.</p>');
+}
+function renderCal(){
+  $("yl").textContent=yr;
+  const ks=[...Array(12)].map((_,i)=>yr+"-"+p2(i+1)),mx=Math.max(1,...ks.map(spent));
+  $("tiles").innerHTML=ks.map(k=>{const a=spent(k);return '<button class="tile'+(k===tk?' cur':'')+(k>tk&&!a?' fut':'')+'" data-k="'+k+'"><b>'+mlab(k,{month:"short"})+'</b><span class="muted">'+(a?eur(a):'—')+'</span><div class="bar"><i style="width:'+a/mx*100+'%"></i></div></button>'}).join("");
+}
+function renderDet(){
+  const list=data.expenses.filter(e=>e.date.startsWith(ck)).sort((a,b)=>b.date.localeCompare(a.date));
+  const tot=list.reduce((s,e)=>s+e.amount,0),bud=data.budgets[ck]||0;
+  $("month").textContent=mlab(ck,{month:"long",year:"numeric"});
+  $("total").textContent=eur(tot);$("budget").value=bud||"";
+  $("bar").className="bar"+(bud&&tot>bud?" over":"");$("bar").firstChild.style.width=(bud?Math.min(100,tot/bud*100):0)+"%";
+  $("left").textContent=bud?(tot>bud?"Sforato di "+eur(tot-bud):"Restano "+eur(bud-tot)):"Imposta un budget";
+  const ic=data.income[ck];$("income").value=ic!=null?ic:"";$("income").placeholder=data.plan.income>0?String(data.plan.income):"0";
+  const by={};list.forEach(e=>by[e.cat]=(by[e.cat]||0)+e.amount);
+  const rows=Object.entries(by).sort((a,b)=>b[1]-a[1]);
+  $("cats").innerHTML=rows.length?rows.map(([c,v])=>`<div class="cat"><div class="row sp"><span>${c}</span><span class="amt">${eur(v)}</span></div><div class="bar" style="margin:4px 0 0"><i style="width:${v/tot*100}%"></i></div></div>`).join(""):'<p class="muted" style="margin:0">Nessuna spesa in questo mese.</p>';
+  $("list").innerHTML=list.length?"":'<p class="muted" style="margin:0">Aggiungi la prima spesa qui sopra.</p>';
+  list.forEach(e=>{
+    const d=document.createElement("div");d.className="item";
+    const l=document.createElement("div"),t=document.createElement("div"),m=document.createElement("div");
+    t.textContent=e.desc||e.cat;m.className="muted";
+    m.textContent=new Date(e.date+"T00:00").toLocaleDateString("it-IT",{day:"numeric",month:"short"})+" · "+e.cat;
+    l.append(t,m);
+    const r=document.createElement("div");r.className="row";
+    const a=document.createElement("span");a.className="amt";a.textContent=eur(e.amount);
+    const x=document.createElement("button");x.className="x";x.textContent="×";x.setAttribute("aria-label","Elimina spesa");
+    x.onclick=()=>{data.expenses=data.expenses.filter(z=>z.id!==e.id);save();render()};
+    r.append(a,x);d.append(l,r);$("list").append(d);
+  });
+}
+function renderSto(){
+  const ex=data.expenses;
+  if(!ex.length){$("ssum").innerHTML='<p class="muted" style="margin:0">Le spese inserite compariranno qui.</p>';$("chm").innerHTML=$("chc").innerHTML=$("allc").innerHTML="";return}
+  const bm={},bc={};let tot=0;
+  ex.forEach(e=>{const k=e.date.slice(0,7);bm[k]=(bm[k]||0)+e.amount;bc[e.cat]=(bc[e.cat]||0)+e.amount;tot+=e.amount});
+  const ek=Object.keys(bm).sort();let f=ek[0];if(sk()&&sk()<f)f=sk();
+  const l=ek[ek.length-1]>tk?ek[ek.length-1]:tk,all=[];
+  for(let k=f;k<=l;k=nx(k))all.push(k);
+  const n=all.length,sp=k=>bm[k]||0,top=ek.reduce((a,k)=>bm[k]>bm[a]?k:a,ek[0]);
+  $("ssum").innerHTML='<div class="grid"><div><p class="muted" style="margin:0">Totale speso</p><b class="sm">'+eur(tot)+'</b></div><div><p class="muted" style="margin:0">Media mensile</p><b class="sm">'+eur(tot/n)+'</b></div></div><p class="muted" style="margin:0">Da '+mlab(f,{month:"short",year:"numeric"})+' a '+mlab(l,{month:"short",year:"numeric"})+' ('+n+(n===1?' mese':' mesi')+'). Mese più alto: '+mlab(top,{month:"long",year:"numeric"})+', '+eur(bm[top])+'.</p>';
+  const ms=all.slice(-12),m=ms.length,mx=Math.max(1,...ms.map(k=>Math.max(incomeOf(k),sp(k))));
+  const W=Math.max(300,m*56),gw=(W-20)/m,bw=Math.min(18,gw/2-3);
+  let s='<svg viewBox="0 0 '+W+' 200" style="width:100%;min-width:'+m*56+'px" role="img" aria-label="Entrate e spese per mese"><line x1="10" x2="'+(W-10)+'" y1="172" y2="172" stroke="var(--line)"/>';
+  ms.forEach((k,i)=>{
+    const c=10+gw*i+gw/2,hi=incomeOf(k)/mx*160,hs=sp(k)/mx*160,lb=mlab(k,{month:"short",year:"2-digit"});
+    s+='<rect x="'+(c-bw-1)+'" y="'+(172-hi)+'" width="'+bw+'" height="'+hi+'" rx="2" fill="var(--accent)"><title>'+lb+' entrate '+eur(incomeOf(k))+'</title></rect><rect x="'+(c+1)+'" y="'+(172-hs)+'" width="'+bw+'" height="'+hs+'" rx="2" fill="var(--warn)"><title>'+lb+' spese '+eur(sp(k))+'</title></rect><text x="'+c+'" y="188" text-anchor="middle" font-size="10" fill="var(--muted)">'+lb+'</text>';
+  });
+  const ik=all.filter(k=>incomeOf(k)>0),si=ik.reduce((a,k)=>a+incomeOf(k),0),ss=ik.reduce((a,k)=>a+sp(k),0);
+  $("chm").innerHTML=s+'</svg><p class="muted" style="margin:6px 0 0"><span style="color:var(--accent)">■</span> Entrate &nbsp;<span style="color:var(--warn)">■</span> Spese'+(ik.length?'. Nei mesi con entrate: entrate '+eur(si)+', spese '+eur(ss)+', differenza '+eur(si-ss)+'.':'. Imposta le entrate per confrontarle.')+'</p>';
+  const es=Object.entries(bc).sort((a,b)=>b[1]-a[1]),R=40,C=2*Math.PI*R;
+  const col=c=>{const i=CATS.indexOf(c);return 'hsl('+(((i<0?9:i)*43+140)%360)+' 55% 52%)'};
+  let off=0,d='<svg viewBox="0 0 120 120" width="170" height="170" role="img" aria-label="Spese per categoria"><g transform="rotate(-90 60 60)">';
+  es.forEach(([c,v])=>{const q=v/tot*C;d+='<circle cx="60" cy="60" r="'+R+'" fill="none" stroke="'+col(c)+'" stroke-width="22" stroke-dasharray="'+q+' '+(C-q)+'" stroke-dashoffset="'+(-off)+'"><title>'+c+' '+eur(v)+'</title></circle>';off+=q});
+  d+='</g><text x="60" y="57" text-anchor="middle" font-size="8" fill="var(--muted)">Totale</text><text x="60" y="70" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)">'+tot.toLocaleString("it-IT",{maximumFractionDigits:0})+' €</text></svg>';
+  $("chc").innerHTML='<div style="display:flex;justify-content:center">'+d+'</div>';
+  $("allc").innerHTML=es.map(([c,v])=>'<div class="row sp" style="margin:4px 0"><span><span style="color:'+col(c)+'">●</span> '+c+' <span class="muted">'+Math.round(v/tot*100)+'%</span></span><span class="amt">'+eur(v)+'</span></div>').join("");
+}
+function renderImp(){
+  const w=wealth(),p=data.plan;
+  $("liq").value=w?w.liq.toFixed(2):"";$("inv").value=w?w.inv.toFixed(2):"";
+  $("sinfo").textContent=p.startDate?"Ultimo aggiornamento dei saldi: "+new Date(p.startDate+"T00:00").toLocaleDateString("it-IT",{day:"numeric",month:"long",year:"numeric"})+". I valori sopra sono quelli calcolati oggi: correggili se non corrispondono al tuo conto.":"";
+  $("inc0").value=p.income||"";$("pac").value=p.pac||"";$("rate").value=p.rate;
+}
+function render(){
+  const ids={home:"v-home",mesi:"v-mesi",sto:"v-sto",imp:"v-imp"};
+  for(const k in ids)$(ids[k]).hidden=k!==view;
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("on",b.dataset.v===view));
+  $("cal").hidden=det;$("det").hidden=!det;
+  renderHome();renderCal();renderSto();renderImp();if(det)renderDet();
+}
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>go(b.dataset.v));
+$("tiles").onclick=e=>{const t=e.target.closest("[data-k]");if(t)openMonth(t.dataset.k)};
+$("yp").onclick=()=>{yr--;render()};$("yn").onclick=()=>{yr++;render()};
+$("back").onclick=()=>{yr=+ck.slice(0,4);det=false;render()};
+$("prev").onclick=()=>{ck=pv(ck);render()};$("next").onclick=()=>{ck=nx(ck);render()};
+$("add").onclick=()=>{
+  const amount=parseFloat($("amount").value);
+  if(!(amount>0)||!$("date").value){$("amount").focus();return}
+  data.expenses.push({id:Date.now()+Math.random(),desc:$("desc").value.trim(),amount,date:$("date").value,cat:$("cat").value});
+  $("desc").value="";$("amount").value="";ck=$("date").value.slice(0,7);
+  save();render();
+};
+$("budget").onchange=()=>{data.budgets[ck]=parseFloat($("budget").value)||0;save();render()};
+$("income").onchange=()=>{const v=$("income").value;if(v==="")delete data.income[ck];else data.income[ck]=parseFloat(v)||0;save();render()};
+$("sit").onclick=()=>{
+  const l=parseFloat($("liq").value),i=parseFloat($("inv").value);
+  if(isNaN(l)&&isNaN(i)){$("liq").focus();return}
+  Object.assign(data.plan,{startDate:iso(new Date()),startLiq:l||0,startInv:i||0});
+  save();go("home");
+};
+$("inc0").onchange=()=>{data.plan.income=parseFloat($("inc0").value)||0;save();render()};
+$("pac").onchange=()=>{data.plan.pac=parseFloat($("pac").value)||0;save();render()};
+$("rate").onchange=()=>{data.plan.rate=Math.max(0,parseFloat($("rate").value)||0);save();render()};
+$("bk-copy").onclick=async()=>{const t=JSON.stringify(data);try{await navigator.clipboard.writeText(t);$("bk-msg").textContent="Backup copiato. Incollalo in Note."}catch(e){$("bk").value=t;$("bk").select();$("bk-msg").textContent="Copia il testo qui sopra e incollalo in Note."}};
+$("bk-load").onclick=()=>{try{const d=JSON.parse($("bk").value);if(!Array.isArray(d.expenses))throw 0;data=d;norm();save();render();$("bk-msg").textContent="Dati ripristinati."}catch(e){$("bk-msg").textContent="Testo non valido: incolla un backup copiato da questa app."}};
+if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
+render();
+</script>
+</body>
+</html>
